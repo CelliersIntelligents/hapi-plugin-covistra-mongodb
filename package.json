@@ -1,0 +1,11 @@
+{
+  "name": "covistra-mongodb",
+  "version": "0.1.0",
+  "dependencies": {
+    "bluebird": "^2.9.34",
+    "joi": "^6.6.1",
+    "lodash": "^3.10.1",
+    "mongodb": "^2.0.40",
+    "pow-mongodb-fixtures": "^0.12.0"
+  }
+}
