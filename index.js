@@ -63,6 +63,7 @@ exports.register = function (server, options, next) {
             });
 
         }).then(function(dbs) {
+            server.expose('dbs', dbs);
             systemLog.info("%d database(s) have been connected", dbs.length);
             return P.map(dbs, function(db) {
                 return indexManager.ensureIndexes(db.db, db.name);
