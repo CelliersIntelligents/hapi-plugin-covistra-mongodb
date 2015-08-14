@@ -48,6 +48,8 @@ exports.register = function (server, options, next) {
 
         //TODO: Generic DBRef resolver (with field selection, promise-based)
 
+        var DataSeeder = require('./lib/data-seeder')(server, systemLog, config);
+
         systemLog.debug( "Connecting to all configured MongoDB databases");
 
         // Looping through all configured DB instances
@@ -72,8 +74,27 @@ exports.register = function (server, options, next) {
                 if(options.testMode) {
                     return require('./test/setup-test-mode')(server, systemLog, config, dbs, options);
                 }
-                else
-                    done();
+                else {
+
+                    // Perform data seeding
+                    var seedingCfg = config.get('plugins:mongodb:db-seeding');
+                    var plugins = config.get('plugins');
+
+                    return P.map(_.keys(plugins), function(pluginName) {
+                        var plugin = plugins[pluginName];
+                        if(plugin['seed-data']) {
+                            systemLog.debug("Checking to seed data for plugin %s", pluginName);
+                            return P.each(_.keys(plugin['seed-data']), function(dbName) {
+                                systemLog.debug("Initiating seeding for database %s", dbName);
+                                var ds = new DataSeeder(dbName, plugin['seed-data'][dbName], seedingCfg);
+                                return ds.seed();
+                            });
+                        }
+                    }).then(function() {
+                        systemLog.debug("Database initialization complete");
+                        done();
+                    });
+                }
             });
         }).catch(function (err) {
             systemLog.error(err);
