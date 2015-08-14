@@ -17,146 +17,72 @@
 "use strict";
 
 var P = require('bluebird'),
-    MongoClient = P.promisifyAll(require('mongodb').MongoClient),
-    Fixtures = require('pow-mongodb-fixtures'),
+    mongodb = require('mongodb'),
     path = require('path'),
     _ = require('lodash');
 
+var MongoClient = P.promisifyAll(mongodb.MongoClient);
+
 exports.register = function (server, options, next) {
 
-    // Retrieve a reference to the current system configuration
-    var config = server.plugins['hapi-config'].CurrentConfiguration;
-    var systemLog = server.plugins['covistra-system'].systemLog;
+    server.dependency(['covistra-system'], function(plugin, done) {
 
-    systemLog.log.info("Registering the MongoDB plugin");
+        // Retrieve a reference to the current system configuration
+        var config = server.plugins['hapi-config'].CurrentConfiguration;
+        var systemLog = server.plugins['covistra-system'].systemLog;
 
-    var _db;
+        systemLog.info("Registering the MongoDB plugin");
+        systemLog.debug("Registering schema manager");
 
-    server.log(['debug'], "Registering schema manager");
+        // Expose schema manager
+        var schemaManager = require('./lib/schema-manager')(server, systemLog.child({service: 'schema-manager'}));
+        server.expose('schemaManager', schemaManager);
 
-    // Expose schema manager
-    var schemaManager = require('./lib/schema-manager')(server, systemLog.child({service: 'schemaManager'}));
-    server.expose('schemaManager', schemaManager);
+        // Expose index manager
+        var indexManager = require('./lib/index-manager')(server, systemLog.child({service: 'index-manager'}));
+        server.expose('indexManager', indexManager);
 
-    // Expose a few helpers
-    server.expose('uniqueCheck', require('./lib/unique-check')(server, systemLog));
-    server.expose('ObjectId', mongodb.ObjectId);
+        // Expose a few helpers
+        server.expose('uniqueCheck', require('./lib/unique-check')(server, systemLog));
+        server.expose('ObjectId', mongodb.ObjectId);
 
-    //TODO: Generic DBRef resolver (with field selection, promise-based)
+        //TODO: Generic DBRef resolver (with field selection, promise-based)
 
-    if (options.testMode) {
-        systemLog.info("Configuring MongoDB in test mode");
+        systemLog.debug( "Connecting to all configured MongoDB databases");
 
-        _db = MongoClient.connectAsync(config.get('MONGODB_URI'), {safe: true, db: {slaveOk: true}});
-
-        P.join(_db).then(function (dbs) {
-            systemLog.info("%d database(s) are connected", dbs.length);
-
-            dbs['MAIN'] = dbs[0];
-            server.expose("MAIN", dbs[0]);
-
-            return dbs;
-        }).catch(function (err) {
-            systemLog.error(err);
-        }).then(function (dbs) {
-            systemLog.info("Loading all fixtures from %s", options.fixtures);
-
-            server.expose('cleanUp', function(dbName, collections, filter) {
-                systemLog.debug("Cleaning up test data in DB %s", dbName, collections);
-
-                return P.map(collections, function(colName) {
-                    systemLog.trace("Cleaning up test data in collection %s", colName);
-                    var coll = dbs[dbName].collection(colName);
-
-                    if(filter) {
-                        systemLog.trace("Cleaning only %s matching filter", colName, filter);
-                        return P.promisify(coll.remove, coll)(filter);
-                    }
-                    else {
-                        return P.promisify(coll.remove, coll)({});
-                    }
-                });
+        // Looping through all configured DB instances
+        return P.map(config.get('plugins:mongodb:dbs') || [], function(dbs) {
+            systemLog.debug("Configuring database %s (%s)", dbs.name, dbs.uri);
+            return MongoClient.connectAsync(dbs.uri, _.defaults(dbs.options || {}, {safe:true, db: { slaveOk: true}})).then(function(db) {
+                server.expose(dbs.name, db);
+                return {
+                    name: dbs.name,
+                    uri: dbs.uri,
+                    db: db
+                };
             });
 
-            /**
-             * Cleanup a dependent tables based on the result of a reference query
-             *
-             * ex:
-             *
-             * To clean all aspects related to userRequest products:
-             *
-             * cleanUpRef('RAW', 'aspects', { col: 'products', key: 'AUPID', ref: 'AUPID', select: {'_t.userRequest': true} });
-             *
-             * key is the key field in the collection to remove.
-             * ref is the key field in the reference collection. If ref is not provided, key will be used for both.
-             *
-             */
-            server.expose('cleanUpRef', function(dbName, colName, refSpec) {
-                systemLog.debug("Cleaning up referenced test data in DB %s", dbName, colName, refSpec);
-                var refCol = dbs[dbName].collection(refSpec.col);
-                var q = {};
-                var cursor = refCol.find(refSpec.select);
-                return P.promisify(cursor.toArray, cursor)().then(function(refs) {
-                    systemLog.debug("Found %d references to remove", refs.length);
-                    var keys = _.map(refs, function(r){ return r[refSpec.ref || refSpec.key] });
-                    var coll = dbs[dbName].collection(colName);
-                    q = {};
-                    q[refSpec.key] = { $in : keys };
-                    systemLog.debug("Removing references matching", q);
-                    return P.promisify(coll.remove, coll)(q);
-                });
-            });
-
-            // Create fixtures for all databases
-            systemLog.debug("Creating all fixtures loaders");
-            var loader = Fixtures.connect(config.get('MONGODB_URI'));
-
-            return P.join(
-                P.promisify(loader.clear, loader)()
-            ).then(function() {
-
-                // Recreate all indexes
-                systemLog.debug("Create all required indexes in test databases");
-
-                return P.join(
-                    require('./lib/indexes/main')(dbs[0], systemLog)
-                ).then(function() {
-                    systemLog.debug("All indexes were created. Importing fixture data");
-                    return P.join(
-                        P.promisify(loader.load, loader)(options.fixtures+"/main")
-                    ).then(function() {
-                        systemLog.info("All fixtures were successfully loaded");
-                    });
-                }).catch(function(err) {
-                    systemLog.warn('Something happen while we were trying to create indexes', err);
-                });
-
-            });
-
-        }).then(next);
-
-    }
-    else {
-        systemLog.debug( "Configuring MongoDB in prod mode");
-
-        _db = MongoClient.connectAsync(config.get('MONGODB_URI'), {safe: true, db: {slaveOk: true}});
-
-        P.join(_db).then(function (dbs) {
-            systemLog.info("%d databases are connected", dbs.length);
-
-            server.expose("MAIN", dbs[0]);
-
-            // Make sure all indexes are created
-            return P.join(
-                require('./lib/indexes/main')(dbs[0], systemLog)
-            ).then(function() {
+        }).then(function(dbs) {
+            systemLog.info("%d database(s) have been connected", dbs.length);
+            return P.map(dbs, function(db) {
+                return indexManager.ensureIndexes(db.db, db.name);
+            }).then(function() {
                 systemLog.info("All indexes were created or updated in all databases");
+                if(options.testMode) {
+                    return require('./test/setup-test-mode')(server, systemLog, config, dbs, options);
+                }
+                else
+                    done();
             });
-
         }).catch(function (err) {
             systemLog.error(err);
-        }).then(next);
-    }
+            done(err);
+        });
+
+    });
+
+    next();
+
 
 };
 
