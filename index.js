@@ -82,7 +82,7 @@ exports.register = function (server, options, next) {
 
                     return P.map(_.keys(plugins), function(pluginName) {
                         var plugin = plugins[pluginName];
-                        if(plugin['seed-data']) {
+                        if(plugin && plugin['seed-data']) {
                             systemLog.debug("Checking to seed data for plugin %s", pluginName);
                             return P.each(_.keys(plugin['seed-data']), function(dbName) {
                                 systemLog.debug("Initiating seeding for database %s", dbName);
