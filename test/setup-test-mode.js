@@ -1,4 +1,5 @@
-Fixtures = require('pow-mongodb-fixtures');
+var Fixtures = require('pow-mongodb-fixtures'),
+    P = require('bluebird');
 
 module.exports = function(server, log, config, dbs, options) {
 
