@@ -14,10 +14,10 @@ module.exports = function(server, log, config, dbs, options) {
 
             if(filter) {
                 systemLog.trace("Cleaning only %s matching filter", colName, filter);
-                return P.promisify(coll.remove, coll)(filter);
+                return P.promisify(coll.removeMany, coll)(filter);
             }
             else {
-                return P.promisify(coll.remove, coll)({});
+                return P.promisify(coll.removeMany, coll)({});
             }
         });
     });
@@ -61,6 +61,8 @@ module.exports = function(server, log, config, dbs, options) {
             return P.promisify(loader.load, loader)(options.fixtures+"/"+dbSpec.name).then(function() {
                 log.info("All fixtures were successfully loaded");
             });
+        }).then(function(){
+            log.info("test mode setup complete");
         });
 
     }).catch(function(err) {

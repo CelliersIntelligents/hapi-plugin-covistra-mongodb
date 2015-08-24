@@ -90,12 +90,13 @@ exports.register = function (server, options, next) {
                                 return ds.seed();
                             });
                         }
-                    }).then(function() {
-                        systemLog.debug("Database initialization complete");
-                        done();
                     });
                 }
+            }).then(function(){
+                systemLog.info("All databases were successfully complete");
+                done();
             });
+
         }).catch(function (err) {
             systemLog.error(err);
             done(err);
