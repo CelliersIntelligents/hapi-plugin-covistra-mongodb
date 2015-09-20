@@ -1,5 +1,6 @@
 var Fixtures = require('pow-mongodb-fixtures'),
     requireDirectory = require('require-directory'),
+    _ = require('lodash'),
     P = require('bluebird');
 
 module.exports = function(server, log, config, dbs, options) {
