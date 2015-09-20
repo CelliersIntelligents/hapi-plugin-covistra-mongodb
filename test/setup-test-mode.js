@@ -55,6 +55,7 @@ module.exports = function(server, log, config, dbs, options) {
 
     server.expose('loadFixtures', function(fixturePath) {
         return requireDirectory(module, fixturePath, { visit: function(collection) {
+            log.debug("Loading fixture for collection %s", collection);
             if(_.isFunction(collection)) {
                 return collection(server.plugins['covistra-mongodb'], server);
             }
@@ -65,18 +66,22 @@ module.exports = function(server, log, config, dbs, options) {
     });
 
     return P.map(dbs, function(dbSpec) {
+        log.debug("Initializing database", dbSpec.name);
 
-        // Create fixtures for all databases
-        log.debug("Creating all fixtures loaders for database %s", dbSpec.name);
-        var loader = Fixtures.connect(dbSpec.uri);
+        if(dbSpec.fixturePath) {
 
-        return P.promisify(loader.clear, loader)().then(function() {
-            return P.promisify(loader.load, loader)(options.fixtures+"/"+dbSpec.name).then(function() {
-                log.info("All fixtures were successfully loaded");
+            // Create fixtures for all databases
+            log.debug("Creating all fixtures loaders for database %s", dbSpec.name);
+            var loader = Fixtures.connect(dbSpec.uri);
+
+            return P.promisify(loader.clear, loader)().then(function() {
+                return P.promisify(loader.load, loader)(dbSpec.fixturePath).then(function() {
+                    log.info("All fixtures were successfully loaded");
+                });
+            }).then(function(){
+                log.info("test mode setup complete");
             });
-        }).then(function(){
-            log.info("test mode setup complete");
-        });
+        }
 
     }).catch(function(err) {
         log.warn('Something happen while we were trying to setup test mode', err);
