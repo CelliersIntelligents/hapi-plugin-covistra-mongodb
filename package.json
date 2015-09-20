@@ -9,6 +9,7 @@
     "mongodb": "^2.0.40"
   },
   "devDependencies": {
-    "pow-mongodb-fixtures": "git+https://git@github.com/raquelgb/pow-mongodb-fixtures.git"
+    "pow-mongodb-fixtures": "git+https://git@github.com/raquelgb/pow-mongodb-fixtures.git",
+    "require-directory": "^2.1.1"
   }
 }

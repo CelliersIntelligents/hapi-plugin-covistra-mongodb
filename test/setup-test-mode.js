@@ -1,4 +1,5 @@
 var Fixtures = require('pow-mongodb-fixtures'),
+    requireDirectory = require('require-directory'),
     P = require('bluebird');
 
 module.exports = function(server, log, config, dbs, options) {
@@ -49,6 +50,10 @@ module.exports = function(server, log, config, dbs, options) {
             log.debug("Removing references matching", q);
             return P.promisify(coll.remove, coll)(q);
         });
+    });
+
+    server.expose('loadFixtures', function(fixturePath) {
+        return requireDirectory(module, fixturePath);
     });
 
     return P.map(dbs, function(dbSpec) {

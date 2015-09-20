@@ -18,7 +18,6 @@
 
 var P = require('bluebird'),
     mongodb = require('mongodb'),
-    path = require('path'),
     _ = require('lodash');
 
 var MongoClient = P.promisifyAll(mongodb.MongoClient);
@@ -92,7 +91,7 @@ exports.register = function (server, options, next) {
                         }
                     });
                 }
-            }).then(function(){
+            }).then(function() {
                 systemLog.info("All databases were successfully complete");
                 done();
             });
