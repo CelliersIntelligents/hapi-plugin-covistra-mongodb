@@ -53,7 +53,14 @@ module.exports = function(server, log, config, dbs, options) {
     });
 
     server.expose('loadFixtures', function(fixturePath) {
-        return requireDirectory(module, fixturePath);
+        return requireDirectory(module, fixturePath, { visit: function(collection) {
+            if(_.isFunction(collection)) {
+                return collection(server.plugins['covistra-mongodb'], server);
+            }
+            else {
+                return collection;
+            }
+        }});
     });
 
     return P.map(dbs, function(dbSpec) {
