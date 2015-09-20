@@ -6,14 +6,14 @@ module.exports = function(server, log, config, dbs, options) {
     log.info("Loading all fixtures from %s", options.fixtures);
 
     server.expose('cleanUp', function(dbName, collections, filter) {
-        systemLog.debug("Cleaning up test data in DB %s", dbName, collections);
+        log.debug("Cleaning up test data in DB %s", dbName, collections);
 
         return P.map(collections, function(colName) {
-            systemLog.trace("Cleaning up test data in collection %s", colName);
+            log.trace("Cleaning up test data in collection %s", colName);
             var coll = dbs[dbName].collection(colName);
 
             if(filter) {
-                systemLog.trace("Cleaning only %s matching filter", colName, filter);
+                log.trace("Cleaning only %s matching filter", colName, filter);
                 return P.promisify(coll.removeMany, coll)(filter);
             }
             else {
@@ -36,17 +36,17 @@ module.exports = function(server, log, config, dbs, options) {
      *
      */
     server.expose('cleanUpRef', function(dbName, colName, refSpec) {
-        systemLog.debug("Cleaning up referenced test data in DB %s", dbName, colName, refSpec);
+        log.debug("Cleaning up referenced test data in DB %s", dbName, colName, refSpec);
         var refCol = dbs[dbName].collection(refSpec.col);
         var q = {};
         var cursor = refCol.find(refSpec.select);
         return P.promisify(cursor.toArray, cursor)().then(function(refs) {
-            systemLog.debug("Found %d references to remove", refs.length);
+            log.debug("Found %d references to remove", refs.length);
             var keys = _.map(refs, function(r){ return r[refSpec.ref || refSpec.key] });
             var coll = dbs[dbName].collection(colName);
             q = {};
             q[refSpec.key] = { $in : keys };
-            systemLog.debug("Removing references matching", q);
+            log.debug("Removing references matching", q);
             return P.promisify(coll.remove, coll)(q);
         });
     });
