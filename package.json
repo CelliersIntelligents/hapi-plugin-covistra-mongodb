@@ -1,6 +1,6 @@
 {
   "name": "covistra-mongodb",
-  "version": "0.4.3-pre",
+  "version": "0.4.3",
   "dependencies": {
     "bluebird": "^2.10.0",
     "boom": "^2.8.0",
