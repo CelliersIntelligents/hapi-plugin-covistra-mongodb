@@ -5,21 +5,24 @@ var Fixtures = require('pow-mongodb-fixtures'),
 
 module.exports = function(server, log, config, dbs, options) {
 
-    log.info("Loading all fixtures from %s", options.fixtures);
+    log.info("Initializing test mode data");
 
     server.expose('cleanUp', function(dbName, collections, filter) {
         log.debug("Cleaning up test data in DB %s", dbName, collections);
 
         return P.map(collections, function(colName) {
             log.trace("Cleaning up test data in collection %s", colName);
-            var coll = dbs[dbName].collection(colName);
+            var db = dbs[dbName];
+            if(db) {
+                var coll = db.collection(colName);
 
-            if(filter) {
-                log.trace("Cleaning only %s matching filter", colName, filter);
-                return P.promisify(coll.removeMany, coll)(filter);
-            }
-            else {
-                return P.promisify(coll.removeMany, coll)({});
+                if(filter) {
+                    log.trace("Cleaning only %s matching filter", colName, filter);
+                    return P.promisify(coll.removeMany, coll)(filter);
+                }
+                else {
+                    return P.promisify(coll.removeMany, coll)({});
+                }
             }
         });
     });
@@ -39,18 +42,21 @@ module.exports = function(server, log, config, dbs, options) {
      */
     server.expose('cleanUpRef', function(dbName, colName, refSpec) {
         log.debug("Cleaning up referenced test data in DB %s", dbName, colName, refSpec);
-        var refCol = dbs[dbName].collection(refSpec.col);
-        var q = {};
-        var cursor = refCol.find(refSpec.select);
-        return P.promisify(cursor.toArray, cursor)().then(function(refs) {
-            log.debug("Found %d references to remove", refs.length);
-            var keys = _.map(refs, function(r){ return r[refSpec.ref || refSpec.key] });
-            var coll = dbs[dbName].collection(colName);
-            q = {};
-            q[refSpec.key] = { $in : keys };
-            log.debug("Removing references matching", q);
-            return P.promisify(coll.remove, coll)(q);
-        });
+        var db = dbs[dbName];
+        if(db) {
+            var refCol = db.collection(refSpec.col);
+            var q = {};
+            var cursor = refCol.find(refSpec.select);
+            return P.promisify(cursor.toArray, cursor)().then(function(refs) {
+                log.debug("Found %d references to remove", refs.length);
+                var keys = _.map(refs, function(r){ return r[refSpec.ref || refSpec.key] });
+                var coll = dbs[dbName].collection(colName);
+                q = {};
+                q[refSpec.key] = { $in : keys };
+                log.debug("Removing references matching", q);
+                return P.promisify(coll.remove, coll)(q);
+            });
+        }
     });
 
     server.expose('loadFixtures', function(fixturePath) {
