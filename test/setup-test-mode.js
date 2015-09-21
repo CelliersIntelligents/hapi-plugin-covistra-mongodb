@@ -12,9 +12,9 @@ module.exports = function(server, log, config, dbs, options) {
 
         return P.map(collections, function(colName) {
             log.trace("Cleaning up test data in collection %s", colName);
-            var db = server[dbName];
-            if(db) {
-                var coll = db.collection(colName);
+            var dbSpec = _.find(dbs, function(d) { return d.name === dbName });
+            if(dbSpec) {
+                var coll = dbSpec.db.collection(colName);
 
                 if(filter) {
                     log.trace("Cleaning only %s matching filter", colName, filter);
@@ -45,15 +45,15 @@ module.exports = function(server, log, config, dbs, options) {
      */
     server.expose('cleanUpRef', function(dbName, colName, refSpec) {
         log.debug("Cleaning up referenced test data in DB %s", dbName, colName, refSpec);
-        var db = server[dbName];
-        if(db) {
-            var refCol = db.collection(refSpec.col);
+        var dbSpec = _.find(dbs, function(d) { return d.name === dbName });
+        if(dbSpec) {
+            var refCol = dbSpec.db.collection(refSpec.col);
             var q = {};
             var cursor = refCol.find(refSpec.select);
             return P.promisify(cursor.toArray, cursor)().then(function(refs) {
                 log.debug("Found %d references to remove", refs.length);
                 var keys = _.map(refs, function(r){ return r[refSpec.ref || refSpec.key] });
-                var coll = db.collection(colName);
+                var coll = dbSpec.db.collection(colName);
                 q = {};
                 q[refSpec.key] = { $in : keys };
                 log.debug("Removing references matching", q);
