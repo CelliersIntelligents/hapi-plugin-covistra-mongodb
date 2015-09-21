@@ -12,7 +12,7 @@ module.exports = function(server, log, config, dbs, options) {
 
         return P.map(collections, function(colName) {
             log.trace("Cleaning up test data in collection %s", colName);
-            var db = dbs[dbName];
+            var db = server[dbName];
             if(db) {
                 var coll = db.collection(colName);
 
@@ -25,7 +25,7 @@ module.exports = function(server, log, config, dbs, options) {
                 }
             }
             else {
-                log.warn("Requested database %s has never been registered", dbName, dbs);
+                log.warn("Requested database %s has never been registered", dbName);
             }
         });
     });
@@ -45,7 +45,7 @@ module.exports = function(server, log, config, dbs, options) {
      */
     server.expose('cleanUpRef', function(dbName, colName, refSpec) {
         log.debug("Cleaning up referenced test data in DB %s", dbName, colName, refSpec);
-        var db = dbs[dbName];
+        var db = server[dbName];
         if(db) {
             var refCol = db.collection(refSpec.col);
             var q = {};
@@ -53,7 +53,7 @@ module.exports = function(server, log, config, dbs, options) {
             return P.promisify(cursor.toArray, cursor)().then(function(refs) {
                 log.debug("Found %d references to remove", refs.length);
                 var keys = _.map(refs, function(r){ return r[refSpec.ref || refSpec.key] });
-                var coll = dbs[dbName].collection(colName);
+                var coll = db.collection(colName);
                 q = {};
                 q[refSpec.key] = { $in : keys };
                 log.debug("Removing references matching", q);
@@ -61,7 +61,7 @@ module.exports = function(server, log, config, dbs, options) {
             });
         }
         else {
-            log.warn("Requested database %s has never been registered", dbName, dbs);
+            log.warn("Requested database %s has never been registered", dbName);
         }
     });
 
