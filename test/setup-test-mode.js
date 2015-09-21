@@ -24,6 +24,9 @@ module.exports = function(server, log, config, dbs, options) {
                     return P.promisify(coll.removeMany, coll)({});
                 }
             }
+            else {
+                log.warn("Requested database %s has never been registered", dbName, dbs);
+            }
         });
     });
 
@@ -56,6 +59,9 @@ module.exports = function(server, log, config, dbs, options) {
                 log.debug("Removing references matching", q);
                 return P.promisify(coll.remove, coll)(q);
             });
+        }
+        else {
+            log.warn("Requested database %s has never been registered", dbName, dbs);
         }
     });
 
