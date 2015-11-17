@@ -20,11 +20,10 @@ var P = require('bluebird'),
     mongodb = require('mongodb'),
     _ = require('lodash');
 
-var MongoClient = P.promisifyAll(mongodb.MongoClient);
-
 exports.deps = ['covistra-system'];
 
 exports.register = function (server, options, next) {
+    var MongoClient = P.promisifyAll(mongodb.MongoClient);
 
     // Retrieve a reference to the current system configuration
     var config = server.plugins['hapi-config'].CurrentConfiguration;
