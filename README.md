@@ -4,4 +4,5 @@ This plugin exposes one or more MongoDB databases and various helpers to provide
 
 ## IndexManager
 
-The indexManager is used by all plugins to register any required indexes. 
+The indexManager is used by all plugins to register any required indexes. Indexes will be applied as soon as the connection
+is made available.

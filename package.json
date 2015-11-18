@@ -9,7 +9,11 @@
     "mongodb": "^2.0.40"
   },
   "devDependencies": {
-    "pow-mongodb-fixtures": "0.12.0",
-    "require-directory": "^2.1.1"
+    "bunyan": "^1.5.1",
+    "chai": "^3.4.1",
+    "gulp": "^3.9.0",
+    "gulp-mocha": "^2.2.0",
+    "require-directory": "^2.1.1",
+    "sinon": "^1.17.2"
   }
 }

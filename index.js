@@ -70,7 +70,7 @@ exports.register = function (server, options, next) {
         }).then(function() {
             systemLog.info("All indexes were created or updated in all databases");
             if(options.testMode) {
-                return require('./test/setup-test-mode')(server, systemLog, config, dbs, options);
+                return require('./lib/setup-test-mode')(server, systemLog, config, dbs, options);
             }
             else {
 
