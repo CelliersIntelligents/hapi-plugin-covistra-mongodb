@@ -70,27 +70,27 @@ exports.register = function (server, options, next) {
             return indexManager.ensureIndexes(db.db, db.name);
         }).then(function() {
             systemLog.info("All indexes were created or updated in all databases");
-            if(options.testMode) {
-                return require('./lib/setup-test-mode')(server, systemLog, config, dbs, options);
-            }
-            else {
 
-                // Perform data seeding
-                var seedingCfg = config.get('plugins:mongodb:db-seeding');
-                var plugins = config.get('plugins');
+            // Perform data seeding
+            var seedingCfg = config.get('plugins:mongodb:db-seeding');
+            var plugins = config.get('plugins');
 
-                return P.map(_.keys(plugins), function(pluginName) {
-                    var plugin = plugins[pluginName];
-                    if(plugin && plugin['seed-data']) {
-                        systemLog.debug("Checking to seed data for plugin %s", pluginName);
-                        return P.each(_.keys(plugin['seed-data']), function(dbName) {
-                            systemLog.debug("Initiating seeding for database %s", dbName);
-                            var ds = new DataSeeder(dbName, plugin['seed-data'][dbName], seedingCfg);
-                            return ds.seed();
-                        });
-                    }
-                });
-            }
+            return P.map(_.keys(plugins), function(pluginName) {
+                var plugin = plugins[pluginName];
+                if(plugin && plugin['seed-data']) {
+                    systemLog.debug("Checking to seed data for plugin %s", pluginName);
+                    return P.each(_.keys(plugin['seed-data']), function(dbName) {
+                        systemLog.debug("Initiating seeding for database %s", dbName);
+                        var ds = new DataSeeder(dbName, plugin['seed-data'][dbName], seedingCfg);
+                        return ds.seed();
+                    });
+                }
+            }).then(function() {
+                if(options.testMode) {
+                    return require('./lib/setup-test-mode')(server, systemLog, config, dbs, options);
+                }
+            });
+
         }).then(function() {
             systemLog.info("All databases were successfully complete");
             next();
