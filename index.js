@@ -54,6 +54,7 @@ exports.register = function (server, options, next) {
     return P.map(config.get('plugins:mongodb:dbs') || [], function(dbs) {
         systemLog.debug("Configuring database %s (%s)", dbs.name, dbs.uri);
         return MongoClient.connectAsync(dbs.uri, _.defaults(dbs.options || {}, {safe:true, db: { slaveOk: true}})).then(function(db) {
+            db.__name = dbs.name;
             server.expose(dbs.name, db);
             return {
                 name: dbs.name,
