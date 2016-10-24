@@ -5,8 +5,8 @@
     "bluebird": "^2.10.0",
     "boom": "^2.8.0",
     "joi": "^6.7.0",
-    "lodash": "^3.10.1",
-    "mongodb": "^2.0.40"
+    "lodash": "^4.16.4",
+    "mongodb": "^2.2.11"
   },
   "devDependencies": {
     "bunyan": "^1.5.1",
