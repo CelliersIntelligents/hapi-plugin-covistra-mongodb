@@ -35,7 +35,8 @@ describe('MongoDB Plugin', function() {
                         systemLog: logger
                     }
                 },
-                expose: function(){}
+                expose: function(){},
+                decorate: function() {}
             };
             options = {};
 
@@ -75,7 +76,8 @@ describe('MongoDB Plugin', function() {
                         systemLog: logger
                     }
                 },
-                expose: function(){}
+                expose: function(){},
+                decorate: function() {}
             };
             options = {testMode: true};
 
@@ -89,8 +91,8 @@ describe('MongoDB Plugin', function() {
             mockExpose.restore();
         });
 
-        it('should expose 8 services', function() {
-            expect(mockExpose.callCount).to.eql(8);
+        it('should expose 9 services', function() {
+            expect(mockExpose.callCount).to.eql(9);
             expect(mockExpose.firstCall.args[0]).to.eql('schemaManager');
             expect(mockExpose.secondCall.args[0]).to.eql('indexManager');
             expect(mockExpose.args[2][0]).to.eql('uniqueCheck');
@@ -99,6 +101,7 @@ describe('MongoDB Plugin', function() {
             expect(mockExpose.args[5][0]).to.eql('cleanUp');
             expect(mockExpose.args[6][0]).to.eql('cleanUpRef');
             expect(mockExpose.args[7][0]).to.eql('loadFixtures');
+            expect(mockExpose.args[8][0]).to.eql('setupTestMode');
         });
 
     });
