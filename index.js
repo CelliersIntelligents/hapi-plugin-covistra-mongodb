@@ -52,7 +52,14 @@ exports.register = function (server, options, next) {
 
     // Looping through all configured DB instances
     return P.map(config.get('plugins:mongodb:dbs') || [], function(dbs) {
-        systemLog.debug("Configuring database %s (%s)", dbs.name, dbs.uri);
+        var uri = dbs.uri;
+        try {
+            var arrUri = uri.split('@');
+            var arrPrefixUri = arrUri[0].split(':');
+            uri = arrPrefixUri[0] + ':' + arrPrefixUri[1] + ':********@' + arrUri[1];
+        } finally {
+            systemLog.debug("Configuring database %s (%s)", dbs.name, uri);
+        }
         return MongoClient.connectAsync(dbs.uri, _.defaults(dbs.options || {}, {db: { slaveOk: true}})).then(function(db) {
             db.__name = dbs.name;
             server.expose(dbs.name, db);

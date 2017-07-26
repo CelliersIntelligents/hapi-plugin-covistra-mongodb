@@ -6,7 +6,7 @@
     "boom": "^2.8.0",
     "joi": "^6.7.0",
     "lodash": "^4.16.4",
-    "mongodb": "^2.2.11"
+    "mongodb": "^2.2.30"
   },
   "devDependencies": {
     "bunyan": "^1.5.1",
